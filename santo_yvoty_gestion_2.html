@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Santo Yvoty — Gestión</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #faf6f0; --warm: #f0e8da; --brown: #4a2e1a;
+    --terracotta: #c4673a; --sage: #7a9e7e; --gold: #d4a64a;
+    --light-text: #8a7060; --card-bg: #ffffff; --border: #e8ddd0;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height: 100vh; color: var(--brown); }
+  header { background: var(--brown); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+  .dot { width: 9px; height: 9px; background: var(--terracotta); border-radius: 50%; display: inline-block; }
+  #sync-status { font-size: 0.72rem; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 6px; }
+  .dot-sync { width: 7px; height: 7px; border-radius: 50%; background: #aaa; }
+  #sync-status.synced .dot-sync { background: #7a9e7e; }
+  #sync-status.syncing .dot-sync { background: #d4a64a; animation: pulse 1s infinite; }
+  #sync-status.error .dot-sync { background: #c4673a; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  #login-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:85vh; padding:30px; text-align:center; }
+  #login-screen .logo { font-family:'Playfair Display',serif; font-size:2rem; color:var(--brown); margin-bottom:8px; }
+  #login-screen p { color:var(--light-text); font-size:0.9rem; margin-bottom:28px; line-height:1.6; }
+  .btn-google { display:flex; align-items:center; gap:10px; background:white; border:2px solid var(--border); border-radius:12px; padding:12px 24px; font-family:'DM Sans',sans-serif; font-size:0.9rem; font-weight:500; color:var(--brown); cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:all 0.2s; }
+  .btn-google:hover { border-color:var(--terracotta); }
+  .btn-google svg { width:20px; height:20px; }
+  .info-box { background:var(--warm); border-radius:12px; padding:14px 18px; margin-top:24px; font-size:0.78rem; color:var(--light-text); max-width:320px; line-height:1.6; }
+
+  #app { display:none; }
+  .tabs { display:flex; background:var(--warm); border-bottom:2px solid var(--border); padding:0 14px; gap:2px; overflow-x:auto; }
+  .tab { padding:11px 16px; font-size:0.8rem; font-weight:500; cursor:pointer; border:none; background:transparent; color:var(--light-text); border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.2s; white-space:nowrap; }
+  .tab.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
+  .section { display:none; padding:18px 14px; }
+  .section.active { display:block; }
+
+  .form-box { background:white; border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:18px; }
+  .section-title { font-size:0.72rem; font-weight:500; color:var(--light-text); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .form-grid .full { grid-column:1/-1; }
+  @media(max-width:480px){ .form-grid { grid-template-columns:1fr; } }
+  .lbl { display:block; font-size:0.72rem; font-weight:500; color:var(--light-text); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.4px; }
+  input, select, textarea { width:100%; padding:8px 11px; border:1.5px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:0.84rem; color:var(--brown); background:white; }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--terracotta); }
+  .btn-primary { background:var(--terracotta); color:white; border:none; border-radius:10px; padding:10px 20px; font-family:'DM Sans',sans-serif; font-size:0.84rem; font-weight:500; cursor:pointer; }
+
+  .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:12px; }
+  .card { background:white; border:1px solid var(--border); border-radius:14px; padding:14px; animation:fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+  .card-title { font-family:'Playfair Display',serif; font-size:0.95rem; color:var(--brown); }
+  .badge { font-size:0.67rem; padding:3px 8px; border-radius:20px; font-weight:500; }
+  .badge-pendiente { background:#fde8d8; color:var(--terracotta); }
+  .badge-proceso { background:#fef3d0; color:#9a7020; }
+  .badge-listo { background:#dff0e0; color:#3a7a4a; }
+  .card-meta { font-size:0.76rem; color:var(--light-text); margin-bottom:7px; }
+  .card-items { font-size:0.8rem; color:var(--brown); line-height:1.7; }
+  .card-items li { list-style:none; padding-left:14px; position:relative; }
+  .card-items li::before { content:'·'; position:absolute; left:4px; color:var(--terracotta); }
+  .card-footer { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:9px; border-top:1px solid var(--border); }
+  .card-date { font-size:0.7rem; color:var(--light-text); }
+  .btn-status { font-size:0.7rem; padding:3px 9px; border-radius:20px; border:1px solid var(--border); background:var(--warm); cursor:pointer; color:var(--brown); }
+  .btn-delete { background:none; border:none; cursor:pointer; color:#ccc; font-size:0.85rem; padding:2px 5px; }
+
+  .stats-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .stat-pill { background:white; border:1px solid var(--border); border-radius:30px; padding:6px 13px; font-size:0.76rem; color:var(--light-text); }
+  .stat-pill strong { color:var(--brown); }
+
+  .stock-list { display:flex; flex-direction:column; gap:9px; }
+  .stock-item { background:white; border:1px solid var(--border); border-radius:12px; padding:13px 15px; display:flex; justify-content:space-between; align-items:center; }
+  .stock-name { font-size:0.88rem; font-weight:500; }
+  .stock-qty { font-size:0.77rem; color:var(--light-text); }
+  .stock-bar-wrap { width:90px; height:5px; background:var(--warm); border-radius:3px; overflow:hidden; margin-top:4px; }
+  .stock-bar { height:100%; border-radius:3px; transition:width 0.4s ease; }
+  .stock-bar.alta { background:var(--sage); }
+  .stock-bar.media { background:var(--gold); }
+  .stock-bar.baja { background:var(--terracotta); }
+  .stock-controls { display:flex; gap:5px; align-items:center; }
+  .btn-qty { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--border); background:var(--warm); cursor:pointer; font-size:1rem; color:var(--brown); display:flex; align-items:center; justify-content:center; }
+  .qty-num { min-width:26px; text-align:center; font-weight:500; font-size:0.88rem; }
+
+  .ai-box { background:var(--brown); border-radius:14px; padding:14px; margin-bottom:18px; display:flex; gap:9px; align-items:flex-start; }
+  .ai-box textarea { flex:1; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:8px; color:#fff; font-family:'DM Sans',sans-serif; font-size:0.83rem; padding:9px 11px; resize:none; min-height:58px; }
+  .ai-box textarea::placeholder { color:rgba(255,255,255,0.45); }
+  .ai-box textarea:focus { outline:none; border-color:var(--gold); }
+  .btn-ai { background:var(--terracotta); color:white; border:none; border-radius:8px; padding:9px 13px; font-size:0.79rem; font-weight:500; cursor:pointer; white-space:nowrap; }
+  .btn-ai:disabled { opacity:0.6; cursor:not-allowed; }
+  .ai-response { background:#fff8f4; border-left:3px solid var(--terracotta); border-radius:0 10px 10px 0; padding:11px 13px; margin-bottom:14px; font-size:0.82rem; line-height:1.7; color:var(--brown); white-space:pre-wrap; }
+  .empty-state { text-align:center; padding:36px 20px; color:var(--light-text); font-size:0.84rem; }
+  .empty-state .big { font-size:2.2rem; margin-bottom:7px; }
+
+  /* SETUP GUIDE */
+  #setup-guide { background:#fff8f4; border:1px solid #f0d8c8; border-radius:14px; padding:20px; margin:20px; }
+  #setup-guide h2 { font-family:'Playfair Display',serif; font-size:1.1rem; margin-bottom:12px; color:var(--brown); }
+  #setup-guide ol { padding-left:20px; font-size:0.84rem; line-height:2; color:var(--brown); }
+  #setup-guide a { color:var(--terracotta); }
+  #setup-guide code { background:var(--warm); padding:2px 6px; border-radius:4px; font-size:0.8rem; }
+  .input-config { display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+  .input-config label { font-size:0.75rem; font-weight:500; color:var(--light-text); text-transform:uppercase; }
+  .input-config input { max-width:500px; }
+  .btn-save-config { background:var(--terracotta); color:white; border:none; border-radius:10px; padding:10px 20px; font-size:0.84rem; cursor:pointer; margin-top:8px; width:fit-content; }
+</style>
+</head>
+<body>
+
+<!-- SETUP GUIDE (si no hay credenciales) -->
+<div id="setup-guide" style="display:none">
+  <h2>⚙️ Configuración inicial — Google Drive</h2>
+  <p style="font-size:0.84rem;color:var(--light-text);margin-bottom:14px;">Para guardar los datos en la nube necesitás crear credenciales gratuitas en Google Cloud (5 minutos).</p>
+  <ol>
+    <li>Andá a <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> e iniciá sesión</li>
+    <li>Creá un proyecto nuevo (o usá uno existente)</li>
+    <li>Habilitá la <strong>Google Drive API</strong> (Biblioteca → buscar "Drive API")</li>
+    <li>Creá credenciales: <strong>ID de cliente OAuth 2.0</strong> → Tipo: Aplicación web</li>
+    <li>En "Orígenes autorizados" agregá la URL donde abrís este archivo (o <code>http://localhost</code>)</li>
+    <li>Creá también una <strong>Clave de API</strong></li>
+    <li>Pegá ambos valores abajo y guardá</li>
+  </ol>
+  <div class="input-config">
+    <div><label>Client ID (termina en .apps.googleusercontent.com)</label><input type="text" id="cfg-client-id" placeholder="xxxx.apps.googleusercontent.com"></div>
+    <div><label>API Key</label><input type="text" id="cfg-api-key" placeholder="AIzaSy..."></div>
+    <button class="btn-save-config" onclick="saveConfig()">Guardar y continuar</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen" style="display:none">
+  <div class="logo">🌸 Santo Yvoty</div>
+  <p>Iniciá sesión con Google para guardar<br>tus pedidos, tareas y stock en Drive.</p>
+  <button class="btn-google" onclick="signIn()">
+    <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+    Continuar con Google
+  </button>
+  <div class="info-box">📁 Los datos se guardan en <strong>santo_yvoty_datos.json</strong> en tu Drive. Solo vos podés verlo.</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <h1><span class="dot"></span> Santo Yvoty</h1>
+    <div id="sync-status"><span class="dot-sync"></span><span id="sync-text">Conectando...</span></div>
+  </header>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('pedidos',this)">📦 Pedidos</button>
+    <button class="tab" onclick="showTab('tareas',this)">✅ Tareas</button>
+    <button class="tab" onclick="showTab('stock',this)">🧴 Stock</button>
+    <button class="tab" onclick="showTab('asistente',this)">🤖 IA</button>
+  </div>
+
+  <div id="tab-pedidos" class="section active">
+    <div class="stats-row" id="stats-pedidos"></div>
+    <div class="form-box">
+      <p class="section-title">Nuevo pedido</p>
+      <div class="form-grid">
+        <div><label class="lbl">Cliente</label><input type="text" id="p-cliente" placeholder="Nombre del cliente"></div>
+        <div><label class="lbl">Tipo</label><select id="p-tipo"><option>Envío</option><option>Retiro</option><option>Entrega personal</option></select></div>
+        <div class="full"><label class="lbl">Productos / detalle</label><textarea id="p-detalle" rows="2" placeholder="Ej: mariposas rosas, set jabones, etiquetas..."></textarea></div>
+      </div>
+      <button class="btn-primary" onclick="agregarPedido()">+ Agregar pedido</button>
+    </div>
+    <div class="cards-grid" id="lista-pedidos"><div class="empty-state"><div class="big">📦</div>Sin pedidos cargados.</div></div>
+  </div>
+
+  <div id="tab-tareas" class="section">
+    <div class="form-box">
+      <p class="section-title">Nueva tarea</p>
+      <div class="form-grid">
+        <div><label class="lbl">Tarea</label><input type="text" id="t-nombre" placeholder="Ej: Cortar etiquetas"></div>
+        <div><label class="lbl">Asignada a</label><input type="text" id="t-persona" placeholder="Ej: Lichi Santi"></div>
+      </div>
+      <button class="btn-primary" onclick="agregarTarea()">+ Agregar tarea</button>
+    </div>
+    <div class="cards-grid" id="lista-tareas"><div class="empty-state"><div class="big">✅</div>Sin tareas por ahora.</div></div>
+  </div>
+
+  <div id="tab-stock" class="section">
+    <div class="form-box">
+      <p class="section-title">Agregar insumo</p>
+      <div class="form-grid">
+        <div><label class="lbl">Insumo</label><input type="text" id="s-nombre" placeholder="Ej: Mini jabón"></div>
+        <div><label class="lbl">Cantidad inicial</label><input type="number" id="s-qty" placeholder="50" min="0"></div>
+      </div>
+      <button class="btn-primary" onclick="agregarStock()">+ Agregar insumo</button>
+    </div>
+    <div class="stock-list" id="lista-stock"><div class="empty-state"><div class="big">🧴</div>Sin insumos cargados.</div></div>
+  </div>
+
+  <div id="tab-asistente" class="section">
+    <div class="ai-box">
+      <textarea id="ai-input" placeholder="Preguntá algo... Ej: ¿Qué pedidos están pendientes? ¿Qué insumos están bajos?"></textarea>
+      <button class="btn-ai" id="btn-consultar" onclick="consultarIA()">Consultar</button>
+    </div>
+    <div id="ai-output"></div>
+    <p style="font-size:0.73rem;color:var(--light-text);text-align:center;margin-top:6px;">El asistente usa tus datos actuales.</p>
+  </div>
+</div>
+
+<script>
+const FILE_NAME = 'santo_yvoty_datos.json';
+let pedidos=[], tareas=[], stock=[];
+let driveFileId=null, tokenClient, accessToken;
+let saveTimer=null;
+
+// ── CONFIG ──────────────────────────────────────────────────────────────
+function getConfig() {
+  return {
+    clientId: localStorage.getItem('sy_client_id') || '',
+    apiKey:   localStorage.getItem('sy_api_key')   || ''
+  };
+}
+
+function saveConfig() {
+  const cid = document.getElementById('cfg-client-id').value.trim();
+  const akey = document.getElementById('cfg-api-key').value.trim();
+  if (!cid || !akey) return alert('Completá ambos campos.');
+  localStorage.setItem('sy_client_id', cid);
+  localStorage.setItem('sy_api_key', akey);
+  document.getElementById('setup-guide').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  loadGSI();
+}
+
+function init() {
+  const cfg = getConfig();
+  if (!cfg.clientId || !cfg.apiKey) {
+    document.getElementById('setup-guide').style.display = 'block';
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    loadGSI();
+  }
+}
+
+function loadGSI() {
+  // GSI loaded via <script> in head; wait for it
+  const wait = setInterval(() => {
+    if (window.google && google.accounts) { clearInterval(wait); } 
+  }, 100);
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────
+function signIn() {
+  const cfg = getConfig();
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: cfg.clientId,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: async (resp) => {
+      if (resp.error) { alert('Error al iniciar sesión: ' + resp.error); return; }
+      accessToken = resp.access_token;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      setSyncStatus('syncing', 'Cargando datos...');
+      await loadGapiAndData();
+    }
+  });
+  tokenClient.requestAccessToken();
+}
+
+async function loadGapiAndData() {
+  await loadScript('https://apis.google.com/js/api.js');
+  await new Promise(res => gapi.load('client', res));
+  const cfg = getConfig();
+  await gapi.client.init({ apiKey: cfg.apiKey, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
+  gapi.client.setToken({ access_token: accessToken });
+  await loadOrCreateFile();
+}
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
+    const s = document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+
+// ── DRIVE ──────────────────────────────────────────────────────────────
+async function loadOrCreateFile() {
+  try {
+    const res = await gapi.client.drive.files.list({
+      q: `name='${FILE_NAME}' and trashed=false`,
+      spaces: 'drive', fields: 'files(id)'
+    });
+    const files = res.result.files;
+    if (files.length > 0) { driveFileId = files[0].id; await loadData(); }
+    else { await createFile(); }
+    setSyncStatus('synced', 'Sincronizado ✓');
+  } catch(e) {
+    console.error(e); setSyncStatus('error', 'Error de conexión');
+  }
+}
+
+async function createFile() {
+  const body = JSON.stringify({ pedidos:[], tareas:[], stock:[] });
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify({name:FILE_NAME,mimeType:'application/json'})],{type:'application/json'}));
+  form.append('file', new Blob([body],{type:'application/json'}));
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+    method:'POST', headers:{Authorization:`Bearer ${accessToken}`}, body:form
+  });
+  const data = await res.json(); driveFileId = data.id;
+}
+
+async function loadData() {
+  const res = await gapi.client.drive.files.get({fileId:driveFileId, alt:'media'});
+  const d = typeof res.result==='string' ? JSON.parse(res.result) : res.result;
+  pedidos=d.pedidos||[]; tareas=d.tareas||[]; stock=d.stock||[];
+  renderAll();
+}
+
+async function saveData() {
+  if (!driveFileId) return;
+  setSyncStatus('syncing','Guardando...');
+  try {
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{
+      method:'PATCH', headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+      body:JSON.stringify({pedidos,tareas,stock})
+    });
+    setSyncStatus('synced','Guardado ✓');
+  } catch(e){ setSyncStatus('error','Error al guardar'); }
+}
+
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveData,1200); }
+function setSyncStatus(state,text){ document.getElementById('sync-status').className=state; document.getElementById('sync-text').textContent=text; }
+
+// ── UI ──────────────────────────────────────────────────────────────
+function showTab(name,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active'); el.classList.add('active');
+  if(name==='pedidos') renderStats();
+}
+function renderAll(){ renderPedidos(); renderTareas(); renderStock(); renderStats(); }
+function now(){ return new Date().toLocaleDateString('es-PY',{day:'2-digit',month:'2-digit'}); }
+
+// PEDIDOS
+function agregarPedido(){
+  const cliente=document.getElementById('p-cliente').value.trim();
+  const tipo=document.getElementById('p-tipo').value;
+  const detalle=document.getElementById('p-detalle').value.trim();
+  if(!cliente||!detalle)return alert('Completá cliente y detalle.');
+  pedidos.push({id:Date.now(),cliente,tipo,detalle,estado:'Pendiente',fecha:now()});
+  document.getElementById('p-cliente').value=''; document.getElementById('p-detalle').value='';
+  renderPedidos(); scheduleSave();
+}
+function renderPedidos(){
+  const el=document.getElementById('lista-pedidos');
+  if(!pedidos.length){el.innerHTML='<div class="empty-state"><div class="big">📦</div>Sin pedidos.</div>';renderStats();return;}
+  el.innerHTML=pedidos.map(p=>`<div class="card">
+    <div class="card-header"><div class="card-title">${p.cliente}</div>
+    <span class="badge badge-${p.estado==='Pendiente'?'pendiente':p.estado==='En proceso'?'proceso':'listo'}">${p.estado}</span></div>
+    <div class="card-meta">📍 ${p.tipo}</div>
+    <ul class="card-items">${p.detalle.split(',').map(x=>`<li>${x.trim()}</li>`).join('')}</ul>
+    <div class="card-footer"><span class="card-date">${p.fecha}</span>
+    <div style="display:flex;gap:5px;"><button class="btn-status" onclick="avanzarPedido(${p.id})">→ Avanzar</button>
+    <button class="btn-delete" onclick="borrarPedido(${p.id})">✕</button></div></div></div>`).join('');
+  renderStats();
+}
+function avanzarPedido(id){const p=pedidos.find(x=>x.id===id);if(!p)return;const e=['Pendiente','En proceso','Listo'];const i=e.indexOf(p.estado);if(i<e.length-1)p.estado=e[i+1];renderPedidos();scheduleSave();}
+function borrarPedido(id){pedidos=pedidos.filter(x=>x.id!==id);renderPedidos();scheduleSave();}
+function renderStats(){
+  const pend=pedidos.filter(p=>p.estado==='Pendiente').length;
+  const proc=pedidos.filter(p=>p.estado==='En proceso').length;
+  const list=pedidos.filter(p=>p.estado==='Listo').length;
+  document.getElementById('stats-pedidos').innerHTML=`
+    <div class="stat-pill"><strong>${pend}</strong> Pendientes</div>
+    <div class="stat-pill"><strong>${proc}</strong> En proceso</div>
+    <div class="stat-pill"><strong>${list}</strong> Listos</div>
+    <div class="stat-pill"><strong>${pedidos.length}</strong> Total</div>`;
+}
+
+// TAREAS
+function agregarTarea(){
+  const nombre=document.getElementById('t-nombre').value.trim();
+  const persona=document.getElementById('t-persona').value.trim();
+  if(!nombre)return alert('Escribí el nombre de la tarea.');
+  tareas.push({id:Date.now(),nombre,persona:persona||'Sin asignar',estado:'Pendiente',fecha:now()});
+  document.getElementById('t-nombre').value=''; document.getElementById('t-persona').value='';
+  renderTareas(); scheduleSave();
+}
+function renderTareas(){
+  const el=document.getElementById('lista-tareas');
+  if(!tareas.length){el.innerHTML='<div class="empty-state"><div class="big">✅</div>Sin tareas.</div>';return;}
+  el.innerHTML=tareas.map(t=>`<div class="card">
+    <div class="card-header"><div class="card-title">${t.nombre}</div>
+    <span class="badge badge-${t.estado==='Pendiente'?'pendiente':t.estado==='En proceso'?'proceso':'listo'}">${t.estado}</span></div>
+    <div class="card-meta">👤 ${t.persona}</div>
+    <div class="card-footer"><span class="card-date">${t.fecha}</span>
+    <div style="display:flex;gap:5px;"><button class="btn-status" onclick="avanzarTarea(${t.id})">→ Avanzar</button>
+    <button class="btn-delete" onclick="borrarTarea(${t.id})">✕</button></div></div></div>`).join('');
+}
+function avanzarTarea(id){const t=tareas.find(x=>x.id===id);if(!t)return;const e=['Pendiente','En proceso','Listo'];const i=e.indexOf(t.estado);if(i<e.length-1)t.estado=e[i+1];renderTareas();scheduleSave();}
+function borrarTarea(id){tareas=tareas.filter(x=>x.id!==id);renderTareas();scheduleSave();}
+
+// STOCK
+function agregarStock(){
+  const nombre=document.getElementById('s-nombre').value.trim();
+  const qty=parseInt(document.getElementById('s-qty').value)||0;
+  if(!nombre)return alert('Escribí el nombre del insumo.');
+  stock.push({id:Date.now(),nombre,qty,max:Math.max(qty,50)});
+  document.getElementById('s-nombre').value=''; document.getElementById('s-qty').value='';
+  renderStock(); scheduleSave();
+}
+function cambiarQty(id,delta){const s=stock.find(x=>x.id===id);if(s){s.qty=Math.max(0,s.qty+delta);renderStock();scheduleSave();}}
+function renderStock(){
+  const el=document.getElementById('lista-stock');
+  if(!stock.length){el.innerHTML='<div class="empty-state"><div class="big">🧴</div>Sin insumos.</div>';return;}
+  el.innerHTML=stock.map(s=>{
+    const pct=Math.min(100,Math.round((s.qty/s.max)*100));
+    const nivel=pct>60?'alta':pct>25?'media':'baja';
+    return `<div class="stock-item"><div>
+      <div class="stock-name">${s.nombre}</div>
+      <div class="stock-qty">${s.qty} unidades · ${nivel==='baja'?'⚠️ Bajo':nivel==='media'?'🟡 Medio':'🟢 OK'}</div>
+      <div class="stock-bar-wrap"><div class="stock-bar ${nivel}" style="width:${pct}%"></div></div></div>
+      <div class="stock-controls">
+        <button class="btn-qty" onclick="cambiarQty(${s.id},-1)">−</button>
+        <span class="qty-num">${s.qty}</span>
+        <button class="btn-qty" onclick="cambiarQty(${s.id},+1)">+</button>
+        <button class="btn-delete" onclick="borrarStock(${s.id})">✕</button>
+      </div></div>`;
+  }).join('');
+}
+function borrarStock(id){stock=stock.filter(x=>x.id!==id);renderStock();scheduleSave();}
+
+// ASISTENTE IA
+async function consultarIA(){
+  const pregunta=document.getElementById('ai-input').value.trim(); if(!pregunta)return;
+  const btn=document.getElementById('btn-consultar'); btn.disabled=true; btn.textContent='...';
+  const ctx=`Sos el asistente de "Santo Yvoty", un emprendimiento artesanal.
+PEDIDOS: ${pedidos.length?pedidos.map(p=>`${p.cliente}|${p.tipo}|${p.estado}|${p.detalle}`).join(' / '):'Sin pedidos.'}
+TAREAS: ${tareas.length?tareas.map(t=>`${t.nombre}|${t.persona}|${t.estado}`).join(' / '):'Sin tareas.'}
+STOCK: ${stock.length?stock.map(s=>`${s.nombre}:${s.qty}u`).join(', '):'Sin insumos.'}
+Respondé breve y claro en español rioplatense. Alertá stock menor a 5 unidades.`;
+  const out=document.getElementById('ai-output');
+  out.innerHTML='<div class="ai-response" style="color:var(--light-text)">✨ Consultando...</div>';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:ctx,messages:[{role:'user',content:pregunta}]})});
+    const data=await res.json();
+    out.innerHTML=`<div class="ai-response">${data.content?.[0]?.text||'Sin respuesta.'}</div>`;
+  }catch(e){out.innerHTML='<div class="ai-response" style="color:red">Error al conectar.</div>';}
+  btn.disabled=false; btn.textContent='Consultar'; document.getElementById('ai-input').value='';
+}
+
+init(); renderStats();
+</script>
+</body>
+</html>
