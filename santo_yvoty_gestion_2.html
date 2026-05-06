@@ -597,14 +597,37 @@ async function loadData(){
   pedidos=d.pedidos||[];clientes=d.clientes||[];productos=d.productos||[];stock=d.stock||[];historial=d.historial||[];
   renderAll();
 }
+async function refreshToken(){
+  return new Promise((res,rej)=>{
+    tokenClient.callback=r=>{
+      if(r.error){rej(r.error);return;}
+      accessToken=r.access_token;
+      gapi.client.setToken({access_token:accessToken});
+      res();
+    };
+    tokenClient.requestAccessToken({prompt:''});
+  });
+}
 async function saveData(){
-  if(!driveFileId)return;setSS('saving','Guardando...');
-  try{
-    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{
+  if(!driveFileId)return;
+  setSS('saving','Guardando...');
+  const doSave=async()=>{
+    const r=await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{
       method:'PATCH',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
       body:JSON.stringify({pedidos,clientes,productos,stock,historial})
-    });setSS('ok','Guardado ✓');
-  }catch(e){setSS('err','Error al guardar');}
+    });
+    if(r.status===401)throw new Error('token_expired');
+    if(!r.ok)throw new Error('save_failed');
+  };
+  try{
+    await doSave();
+    setSS('ok','Guardado ✓');
+  }catch(e){
+    if(e.message==='token_expired'){
+      try{await refreshToken();await doSave();setSS('ok','Guardado ✓');}
+      catch(e2){setSS('err','Sesión vencida — recargá la página');}
+    }else{setSS('err','Error al guardar');}
+  }
 }
 function sched(){clearTimeout(saveTimer);saveTimer=setTimeout(saveData,1200);}
 function setSS(s,t){document.getElementById('sync-bar').className=s;document.getElementById('sync-txt').textContent=t;}
@@ -633,7 +656,11 @@ function toggleForm(){
 
 // ══ DROPDOWN SEARCH ══════════════════════════════════════════
 const DATA={clientes:()=>clientes,productos:()=>productos};
-document.addEventListener('click',e=>{if(!e.target.closest('.sw'))document.querySelectorAll('.dd').forEach(d=>d.classList.remove('open'));});
+
+// Use mousedown instead of click to fire BEFORE blur closes dropdown
+document.addEventListener('mousedown',e=>{
+  if(!e.target.closest('.sw'))document.querySelectorAll('.dd').forEach(d=>d.classList.remove('open'));
+});
 
 function ddSearch(inputId,ddId,dataKey,field,onSel){
   const inp=document.getElementById(inputId);
@@ -643,13 +670,18 @@ function ddSearch(inputId,ddId,dataKey,field,onSel){
   const filtered=arr.filter(x=>x[field].toLowerCase().includes(val));
   dd.innerHTML='';
   if(!val&&!filtered.length){dd.classList.remove('open');return;}
-  if(filtered.length===0&&!val){dd.classList.remove('open');return;}
   filtered.forEach(item=>{
     const div=document.createElement('div');div.className='ddi';
     let txt=item[field];
     if(dataKey==='productos'&&item.precio)txt+=` — ${fmtGs(item.precio)}`;
     div.textContent=txt;
-    div.onclick=()=>{onSel(item);dd.classList.remove('open');};
+    // Use mousedown so selection fires before blur event
+    div.addEventListener('mousedown',e=>{
+      e.preventDefault(); // prevent input blur
+      onSel(item);
+      dd.classList.remove('open');
+      inp.value='';
+    });
     dd.appendChild(div);
   });
   if(val){
@@ -657,11 +689,12 @@ function ddSearch(inputId,ddId,dataKey,field,onSel){
     if(!exists){
       const div=document.createElement('div');div.className='ddi';
       div.innerHTML=`<span>✚ Crear "<strong>${inp.value}</strong>"</span><span class="new-tag">NUEVO</span>`;
-      div.onclick=()=>{
+      div.addEventListener('mousedown',e=>{
+        e.preventDefault();
         if(dataKey==='clientes'){document.getElementById('mc-nom').value=inp.value;openM('m-cli');}
         else{document.getElementById('mp-nom').value=inp.value;openM('m-prod');}
         dd.classList.remove('open');
-      };
+      });
       dd.appendChild(div);
     }
   }
