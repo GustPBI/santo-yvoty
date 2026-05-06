@@ -6,446 +6,693 @@
 <title>Santo Yvoty — Gestión</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --cream: #faf6f0; --warm: #f0e8da; --brown: #4a2e1a;
-    --terracotta: #c4673a; --sage: #7a9e7e; --gold: #d4a64a;
-    --light-text: #8a7060; --card-bg: #ffffff; --border: #e8ddd0;
-  }
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height: 100vh; color: var(--brown); }
-  header { background: var(--brown); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
-  header h1 { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
-  .dot { width: 9px; height: 9px; background: var(--terracotta); border-radius: 50%; display: inline-block; }
-  #sync-status { font-size: 0.72rem; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 6px; }
-  .dot-sync { width: 7px; height: 7px; border-radius: 50%; background: #aaa; }
-  #sync-status.synced .dot-sync { background: #7a9e7e; }
-  #sync-status.syncing .dot-sync { background: #d4a64a; animation: pulse 1s infinite; }
-  #sync-status.error .dot-sync { background: #c4673a; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --cream:#faf6f0;--warm:#f0e8da;--brown:#3d2410;--brown2:#5a3820;
+  --terra:#c4673a;--terra2:#a8522a;--sage:#7a9e7e;--gold:#d4a64a;
+  --light:#8a7060;--white:#ffffff;--border:#e8ddd0;--border2:#d4c8b8;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown);min-height:100vh;}
 
-  #login-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:85vh; padding:30px; text-align:center; }
-  #login-screen .logo { font-family:'Playfair Display',serif; font-size:2rem; color:var(--brown); margin-bottom:8px; }
-  #login-screen p { color:var(--light-text); font-size:0.9rem; margin-bottom:28px; line-height:1.6; }
-  .btn-google { display:flex; align-items:center; gap:10px; background:white; border:2px solid var(--border); border-radius:12px; padding:12px 24px; font-family:'DM Sans',sans-serif; font-size:0.9rem; font-weight:500; color:var(--brown); cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:all 0.2s; }
-  .btn-google:hover { border-color:var(--terracotta); }
-  .btn-google svg { width:20px; height:20px; }
-  .info-box { background:var(--warm); border-radius:12px; padding:14px 18px; margin-top:24px; font-size:0.78rem; color:var(--light-text); max-width:320px; line-height:1.6; }
+/* ── HEADER ── */
+header{background:var(--brown);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;}
+.logo{font-family:'Cormorant Garamond',serif;color:var(--cream);font-size:1.25rem;font-weight:600;display:flex;align-items:center;gap:9px;}
+.logo-dot{width:8px;height:8px;background:var(--terra);border-radius:50%;}
+#sync-bar{font-size:0.7rem;color:rgba(255,255,255,0.55);display:flex;align-items:center;gap:5px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#666;}
+#sync-bar.ok .sync-dot{background:var(--sage);}
+#sync-bar.saving .sync-dot{background:var(--gold);animation:blink 1s infinite;}
+#sync-bar.err .sync-dot{background:var(--terra);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
-  #app { display:none; }
-  .tabs { display:flex; background:var(--warm); border-bottom:2px solid var(--border); padding:0 14px; gap:2px; overflow-x:auto; }
-  .tab { padding:11px 16px; font-size:0.8rem; font-weight:500; cursor:pointer; border:none; background:transparent; color:var(--light-text); border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.2s; white-space:nowrap; }
-  .tab.active { color:var(--terracotta); border-bottom-color:var(--terracotta); }
-  .section { display:none; padding:18px 14px; }
-  .section.active { display:block; }
+/* ── TABS ── */
+.tabs{display:flex;background:var(--warm);border-bottom:2px solid var(--border);padding:0 14px;overflow-x:auto;gap:0;}
+.tab{padding:11px 17px;font-size:0.79rem;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--light);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color .2s;}
+.tab.active{color:var(--terra);border-bottom-color:var(--terra);}
 
-  .form-box { background:white; border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:18px; }
-  .section-title { font-size:0.72rem; font-weight:500; color:var(--light-text); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; }
-  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
-  .form-grid .full { grid-column:1/-1; }
-  @media(max-width:480px){ .form-grid { grid-template-columns:1fr; } }
-  .lbl { display:block; font-size:0.72rem; font-weight:500; color:var(--light-text); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.4px; }
-  input, select, textarea { width:100%; padding:8px 11px; border:1.5px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:0.84rem; color:var(--brown); background:white; }
-  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--terracotta); }
-  .btn-primary { background:var(--terracotta); color:white; border:none; border-radius:10px; padding:10px 20px; font-family:'DM Sans',sans-serif; font-size:0.84rem; font-weight:500; cursor:pointer; }
+/* ── SECTIONS ── */
+.sec{display:none;padding:16px 14px;}
+.sec.active{display:block;}
 
-  .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:12px; }
-  .card { background:white; border:1px solid var(--border); border-radius:14px; padding:14px; animation:fadeIn 0.3s ease; }
-  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
-  .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
-  .card-title { font-family:'Playfair Display',serif; font-size:0.95rem; color:var(--brown); }
-  .badge { font-size:0.67rem; padding:3px 8px; border-radius:20px; font-weight:500; }
-  .badge-pendiente { background:#fde8d8; color:var(--terracotta); }
-  .badge-proceso { background:#fef3d0; color:#9a7020; }
-  .badge-listo { background:#dff0e0; color:#3a7a4a; }
-  .card-meta { font-size:0.76rem; color:var(--light-text); margin-bottom:7px; }
-  .card-items { font-size:0.8rem; color:var(--brown); line-height:1.7; }
-  .card-items li { list-style:none; padding-left:14px; position:relative; }
-  .card-items li::before { content:'·'; position:absolute; left:4px; color:var(--terracotta); }
-  .card-footer { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:9px; border-top:1px solid var(--border); }
-  .card-date { font-size:0.7rem; color:var(--light-text); }
-  .btn-status { font-size:0.7rem; padding:3px 9px; border-radius:20px; border:1px solid var(--border); background:var(--warm); cursor:pointer; color:var(--brown); }
-  .btn-delete { background:none; border:none; cursor:pointer; color:#ccc; font-size:0.85rem; padding:2px 5px; }
+/* ── CARDS ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:15px;animation:up .25s ease;}
+@keyframes up{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;}
+.card-name{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;color:var(--brown);}
+.card-sub{font-size:0.75rem;color:var(--light);margin-bottom:8px;}
+.card-products{font-size:0.8rem;color:var(--brown);line-height:1.75;}
+.card-products li{list-style:none;padding-left:14px;position:relative;}
+.card-products li::before{content:'·';position:absolute;left:4px;color:var(--terra);}
+.card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:11px;padding-top:9px;border-top:1px solid var(--border);}
+.card-date{font-size:0.69rem;color:var(--light);}
+.row-btns{display:flex;gap:5px;}
+.btn-adv{font-size:0.7rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--warm);cursor:pointer;color:var(--brown);transition:all .15s;}
+.btn-adv:hover{background:var(--terra);color:#fff;border-color:var(--terra);}
+.btn-del{background:none;border:none;cursor:pointer;color:#ccc;font-size:0.82rem;padding:2px 5px;}
+.btn-del:hover{color:#e05050;}
 
-  .stats-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-  .stat-pill { background:white; border:1px solid var(--border); border-radius:30px; padding:6px 13px; font-size:0.76rem; color:var(--light-text); }
-  .stat-pill strong { color:var(--brown); }
+/* ── BADGES ── */
+.badge{font-size:0.65rem;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.2px;}
+.b-pend{background:#fde8d8;color:var(--terra);}
+.b-proc{background:#fef3d0;color:#9a7020;}
+.b-done{background:#dff0e0;color:#3a7a4a;}
 
-  .stock-list { display:flex; flex-direction:column; gap:9px; }
-  .stock-item { background:white; border:1px solid var(--border); border-radius:12px; padding:13px 15px; display:flex; justify-content:space-between; align-items:center; }
-  .stock-name { font-size:0.88rem; font-weight:500; }
-  .stock-qty { font-size:0.77rem; color:var(--light-text); }
-  .stock-bar-wrap { width:90px; height:5px; background:var(--warm); border-radius:3px; overflow:hidden; margin-top:4px; }
-  .stock-bar { height:100%; border-radius:3px; transition:width 0.4s ease; }
-  .stock-bar.alta { background:var(--sage); }
-  .stock-bar.media { background:var(--gold); }
-  .stock-bar.baja { background:var(--terracotta); }
-  .stock-controls { display:flex; gap:5px; align-items:center; }
-  .btn-qty { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--border); background:var(--warm); cursor:pointer; font-size:1rem; color:var(--brown); display:flex; align-items:center; justify-content:center; }
-  .qty-num { min-width:26px; text-align:center; font-weight:500; font-size:0.88rem; }
+/* ── STATS ── */
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;}
+.pill{background:var(--white);border:1px solid var(--border);border-radius:30px;padding:6px 13px;font-size:0.74rem;color:var(--light);}
+.pill strong{color:var(--brown);}
 
-  .ai-box { background:var(--brown); border-radius:14px; padding:14px; margin-bottom:18px; display:flex; gap:9px; align-items:flex-start; }
-  .ai-box textarea { flex:1; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:8px; color:#fff; font-family:'DM Sans',sans-serif; font-size:0.83rem; padding:9px 11px; resize:none; min-height:58px; }
-  .ai-box textarea::placeholder { color:rgba(255,255,255,0.45); }
-  .ai-box textarea:focus { outline:none; border-color:var(--gold); }
-  .btn-ai { background:var(--terracotta); color:white; border:none; border-radius:8px; padding:9px 13px; font-size:0.79rem; font-weight:500; cursor:pointer; white-space:nowrap; }
-  .btn-ai:disabled { opacity:0.6; cursor:not-allowed; }
-  .ai-response { background:#fff8f4; border-left:3px solid var(--terracotta); border-radius:0 10px 10px 0; padding:11px 13px; margin-bottom:14px; font-size:0.82rem; line-height:1.7; color:var(--brown); white-space:pre-wrap; }
-  .empty-state { text-align:center; padding:36px 20px; color:var(--light-text); font-size:0.84rem; }
-  .empty-state .big { font-size:2.2rem; margin-bottom:7px; }
+/* ── FORM BOX ── */
+.fbox{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:17px;margin-bottom:17px;}
+.ftitle{font-size:0.7rem;font-weight:600;color:var(--light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:13px;}
+.lbl{display:block;font-size:0.7rem;font-weight:500;color:var(--light);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+input,select,textarea{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.83rem;color:var(--brown);background:var(--white);}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--terra);}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px;}
+.fgrid .full{grid-column:1/-1;}
+@media(max-width:480px){.fgrid{grid-template-columns:1fr;}}
+.btn-p{background:var(--terra);color:#fff;border:none;border-radius:9px;padding:9px 20px;font-family:'DM Sans',sans-serif;font-size:0.83rem;font-weight:500;cursor:pointer;transition:background .2s;}
+.btn-p:hover{background:var(--terra2);}
+.btn-sec{background:var(--warm);color:var(--brown);border:1.5px solid var(--border);border-radius:9px;padding:9px 16px;font-family:'DM Sans',sans-serif;font-size:0.83rem;font-weight:500;cursor:pointer;}
 
-  /* SETUP GUIDE */
-  #setup-guide { background:#fff8f4; border:1px solid #f0d8c8; border-radius:14px; padding:20px; margin:20px; }
-  #setup-guide h2 { font-family:'Playfair Display',serif; font-size:1.1rem; margin-bottom:12px; color:var(--brown); }
-  #setup-guide ol { padding-left:20px; font-size:0.84rem; line-height:2; color:var(--brown); }
-  #setup-guide a { color:var(--terracotta); }
-  #setup-guide code { background:var(--warm); padding:2px 6px; border-radius:4px; font-size:0.8rem; }
-  .input-config { display:flex; flex-direction:column; gap:10px; margin-top:14px; }
-  .input-config label { font-size:0.75rem; font-weight:500; color:var(--light-text); text-transform:uppercase; }
-  .input-config input { max-width:500px; }
-  .btn-save-config { background:var(--terracotta); color:white; border:none; border-radius:10px; padding:10px 20px; font-size:0.84rem; cursor:pointer; margin-top:8px; width:fit-content; }
+/* ── SEARCH DROPDOWN ── */
+.search-wrap{position:relative;}
+.dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1.5px solid var(--border2);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.1);z-index:100;max-height:200px;overflow-y:auto;display:none;}
+.dropdown.open{display:block;}
+.dd-item{padding:9px 12px;font-size:0.83rem;cursor:pointer;color:var(--brown);display:flex;justify-content:space-between;align-items:center;transition:background .1s;}
+.dd-item:hover{background:var(--warm);}
+.dd-item .dd-new{font-size:0.7rem;color:var(--terra);font-weight:600;}
+.dd-empty{padding:10px 12px;font-size:0.8rem;color:var(--light);font-style:italic;}
+
+/* ── SELECTED PRODUCTS ── */
+.prod-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+.prod-chip{display:flex;align-items:center;justify-content:space-between;background:var(--warm);border-radius:8px;padding:7px 11px;font-size:0.8rem;}
+.prod-chip-name{color:var(--brown);font-weight:500;}
+.prod-chip-qty{display:flex;align-items:center;gap:6px;}
+.qty-btn{width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);background:var(--white);cursor:pointer;font-size:0.85rem;color:var(--brown);display:flex;align-items:center;justify-content:center;}
+.qty-val{font-size:0.8rem;font-weight:600;min-width:18px;text-align:center;}
+.chip-del{background:none;border:none;cursor:pointer;color:#bbb;font-size:0.8rem;margin-left:6px;}
+.chip-del:hover{color:#e05050;}
+
+/* ── STOCK ── */
+.slist{display:flex;flex-direction:column;gap:9px;}
+.sitem{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;}
+.sname{font-size:0.87rem;font-weight:500;}
+.sqty{font-size:0.75rem;color:var(--light);}
+.sbar-w{width:85px;height:5px;background:var(--warm);border-radius:3px;overflow:hidden;margin-top:3px;}
+.sbar{height:100%;border-radius:3px;transition:width .4s;}
+.sbar.hi{background:var(--sage);}.sbar.md{background:var(--gold);}.sbar.lo{background:var(--terra);}
+.sctrl{display:flex;gap:5px;align-items:center;}
+.sqbtn{width:25px;height:25px;border-radius:50%;border:1.5px solid var(--border);background:var(--warm);cursor:pointer;font-size:.9rem;color:var(--brown);display:flex;align-items:center;justify-content:center;}
+.sqnum{min-width:24px;text-align:center;font-weight:600;font-size:0.85rem;}
+
+/* ── AI ── */
+.aibox{background:var(--brown);border-radius:14px;padding:14px;margin-bottom:16px;display:flex;gap:9px;align-items:flex-start;}
+.aibox textarea{flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.82rem;padding:9px 11px;resize:none;min-height:56px;}
+.aibox textarea::placeholder{color:rgba(255,255,255,.4);}
+.aibox textarea:focus{outline:none;border-color:var(--gold);}
+.btn-ai{background:var(--terra);color:#fff;border:none;border-radius:8px;padding:9px 13px;font-size:0.78rem;font-weight:500;cursor:pointer;white-space:nowrap;}
+.btn-ai:disabled{opacity:.55;cursor:not-allowed;}
+.ai-resp{background:#fff8f4;border-left:3px solid var(--terra);border-radius:0 10px 10px 0;padding:11px 13px;margin-bottom:13px;font-size:0.81rem;line-height:1.75;color:var(--brown);white-space:pre-wrap;}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:36px 20px;color:var(--light);font-size:0.83rem;}
+.empty .ico{font-size:2rem;margin-bottom:7px;}
+
+/* ── LOGIN ── */
+#login{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:85vh;padding:30px;text-align:center;}
+#login .brand{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;color:var(--brown);margin-bottom:6px;}
+#login p{color:var(--light);font-size:0.88rem;margin-bottom:26px;line-height:1.6;}
+.gbtn{display:flex;align-items:center;gap:10px;background:var(--white);border:2px solid var(--border);border-radius:12px;padding:12px 22px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:500;color:var(--brown);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.07);transition:all .2s;}
+.gbtn:hover{border-color:var(--terra);}
+.gbtn svg{width:19px;height:19px;}
+.infobox{background:var(--warm);border-radius:12px;padding:13px 17px;margin-top:22px;font-size:0.77rem;color:var(--light);max-width:310px;line-height:1.6;}
+
+/* ── SETUP ── */
+#setup{display:none;padding:20px;}
+.setup-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:560px;}
+.setup-card h2{font-family:'Cormorant Garamond',serif;font-size:1.2rem;margin-bottom:10px;}
+.setup-card ol{padding-left:18px;font-size:0.83rem;line-height:2.1;color:var(--brown);}
+.setup-card a{color:var(--terra);}
+.setup-card code{background:var(--warm);padding:2px 6px;border-radius:4px;font-size:0.78rem;}
+.cfg-grid{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--white);border-radius:16px;padding:22px;width:90%;max-width:380px;box-shadow:0 12px 40px rgba(0,0,0,.15);}
+.modal h3{font-family:'Cormorant Garamond',serif;font-size:1.1rem;margin-bottom:14px;color:var(--brown);}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+
+/* ── CLIENTS TAB ── */
+.clist{display:flex;flex-direction:column;gap:9px;}
+.citem{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;}
+.cname{font-size:0.9rem;font-weight:500;}
+.cinfo{font-size:0.75rem;color:var(--light);}
 </style>
 </head>
 <body>
 
-<!-- SETUP GUIDE (si no hay credenciales) -->
-<div id="setup-guide" style="display:none">
-  <h2>⚙️ Configuración inicial — Google Drive</h2>
-  <p style="font-size:0.84rem;color:var(--light-text);margin-bottom:14px;">Para guardar los datos en la nube necesitás crear credenciales gratuitas en Google Cloud (5 minutos).</p>
-  <ol>
-    <li>Andá a <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> e iniciá sesión</li>
-    <li>Creá un proyecto nuevo (o usá uno existente)</li>
-    <li>Habilitá la <strong>Google Drive API</strong> (Biblioteca → buscar "Drive API")</li>
-    <li>Creá credenciales: <strong>ID de cliente OAuth 2.0</strong> → Tipo: Aplicación web</li>
-    <li>En "Orígenes autorizados" agregá la URL donde abrís este archivo (o <code>http://localhost</code>)</li>
-    <li>Creá también una <strong>Clave de API</strong></li>
-    <li>Pegá ambos valores abajo y guardá</li>
-  </ol>
-  <div class="input-config">
-    <div><label>Client ID (termina en .apps.googleusercontent.com)</label><input type="text" id="cfg-client-id" placeholder="xxxx.apps.googleusercontent.com"></div>
-    <div><label>API Key</label><input type="text" id="cfg-api-key" placeholder="AIzaSy..."></div>
-    <button class="btn-save-config" onclick="saveConfig()">Guardar y continuar</button>
+<!-- SETUP -->
+<div id="setup">
+  <div class="setup-card">
+    <h2>⚙️ Configuración — Google Drive</h2>
+    <p style="font-size:.83rem;color:var(--light);margin-bottom:13px;">Necesitás credenciales gratuitas de Google Cloud (5 min).</p>
+    <ol>
+      <li>Andá a <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a></li>
+      <li>Habilitá la <strong>Google Drive API</strong></li>
+      <li>Creá <strong>ID de cliente OAuth 2.0</strong> → Aplicación web</li>
+      <li>Agregá tu URL como origen autorizado</li>
+      <li>Creá también una <strong>Clave de API</strong></li>
+    </ol>
+    <div class="cfg-grid">
+      <div><label class="lbl">Client ID</label><input type="text" id="cfg-cid" placeholder="xxxx.apps.googleusercontent.com"></div>
+      <div><label class="lbl">API Key</label><input type="text" id="cfg-key" placeholder="AIzaSy..."></div>
+      <button class="btn-p" style="width:fit-content" onclick="saveConfig()">Guardar y continuar →</button>
+    </div>
   </div>
 </div>
 
 <!-- LOGIN -->
-<div id="login-screen" style="display:none">
-  <div class="logo">🌸 Santo Yvoty</div>
-  <p>Iniciá sesión con Google para guardar<br>tus pedidos, tareas y stock en Drive.</p>
-  <button class="btn-google" onclick="signIn()">
+<div id="login">
+  <div class="brand">🌸 Santo Yvoty</div>
+  <p>Iniciá sesión para acceder<br>a tu gestión sincronizada con Drive.</p>
+  <button class="gbtn" onclick="signIn()">
     <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
     Continuar con Google
   </button>
-  <div class="info-box">📁 Los datos se guardan en <strong>santo_yvoty_datos.json</strong> en tu Drive. Solo vos podés verlo.</div>
+  <div class="infobox">📁 Datos guardados en <strong>santo_yvoty_datos.json</strong> en tu Drive personal.</div>
 </div>
 
 <!-- APP -->
-<div id="app">
+<div id="app" style="display:none">
   <header>
-    <h1><span class="dot"></span> Santo Yvoty</h1>
-    <div id="sync-status"><span class="dot-sync"></span><span id="sync-text">Conectando...</span></div>
+    <div class="logo"><span class="logo-dot"></span>Santo Yvoty</div>
+    <div id="sync-bar"><span class="sync-dot"></span><span id="sync-txt">Conectando...</span></div>
   </header>
   <div class="tabs">
     <button class="tab active" onclick="showTab('pedidos',this)">📦 Pedidos</button>
-    <button class="tab" onclick="showTab('tareas',this)">✅ Tareas</button>
+    <button class="tab" onclick="showTab('clientes',this)">👥 Clientes</button>
+    <button class="tab" onclick="showTab('productos',this)">🏷️ Productos</button>
     <button class="tab" onclick="showTab('stock',this)">🧴 Stock</button>
-    <button class="tab" onclick="showTab('asistente',this)">🤖 IA</button>
+    <button class="tab" onclick="showTab('ia',this)">🤖 IA</button>
   </div>
 
-  <div id="tab-pedidos" class="section active">
-    <div class="stats-row" id="stats-pedidos"></div>
-    <div class="form-box">
-      <p class="section-title">Nuevo pedido</p>
-      <div class="form-grid">
-        <div><label class="lbl">Cliente</label><input type="text" id="p-cliente" placeholder="Nombre del cliente"></div>
-        <div><label class="lbl">Tipo</label><select id="p-tipo"><option>Envío</option><option>Retiro</option><option>Entrega personal</option></select></div>
-        <div class="full"><label class="lbl">Productos / detalle</label><textarea id="p-detalle" rows="2" placeholder="Ej: mariposas rosas, set jabones, etiquetas..."></textarea></div>
+  <!-- PEDIDOS -->
+  <div id="tab-pedidos" class="sec active">
+    <div class="stats" id="stats"></div>
+    <div class="fbox">
+      <p class="ftitle">Nuevo pedido</p>
+      <div class="fgrid">
+        <!-- Cliente -->
+        <div class="full">
+          <label class="lbl">Cliente</label>
+          <div class="search-wrap">
+            <input type="text" id="p-cli-input" placeholder="Buscar o crear cliente..." autocomplete="off"
+              oninput="filterDropdown('p-cli-input','p-cli-dd','clientes','nombre',selectCliente)"
+              onfocus="filterDropdown('p-cli-input','p-cli-dd','clientes','nombre',selectCliente)">
+            <div class="dropdown" id="p-cli-dd"></div>
+          </div>
+          <input type="hidden" id="p-cli-id">
+        </div>
+        <!-- Tipo -->
+        <div>
+          <label class="lbl">Tipo de entrega</label>
+          <select id="p-tipo"><option>Envío</option><option>Retiro</option><option>Entrega personal</option></select>
+        </div>
+        <!-- Fecha entrega -->
+        <div>
+          <label class="lbl">Fecha entrega (opcional)</label>
+          <input type="date" id="p-fecha">
+        </div>
+        <!-- Producto search -->
+        <div class="full">
+          <label class="lbl">Agregar producto</label>
+          <div class="search-wrap">
+            <input type="text" id="p-prod-input" placeholder="Buscar o crear producto..." autocomplete="off"
+              oninput="filterDropdown('p-prod-input','p-prod-dd','productos','nombre',selectProducto)"
+              onfocus="filterDropdown('p-prod-input','p-prod-dd','productos','nombre',selectProducto)">
+            <div class="dropdown" id="p-prod-dd"></div>
+          </div>
+        </div>
+        <!-- Selected products -->
+        <div class="full" id="selected-prods-wrap" style="display:none">
+          <label class="lbl">Productos del pedido</label>
+          <div class="prod-list" id="selected-prods"></div>
+        </div>
+        <!-- Nota -->
+        <div class="full">
+          <label class="lbl">Nota (opcional)</label>
+          <textarea id="p-nota" rows="2" placeholder="Ej: envolver para regalo, color específico..."></textarea>
+        </div>
       </div>
-      <button class="btn-primary" onclick="agregarPedido()">+ Agregar pedido</button>
+      <button class="btn-p" onclick="agregarPedido()">+ Crear pedido</button>
     </div>
-    <div class="cards-grid" id="lista-pedidos"><div class="empty-state"><div class="big">📦</div>Sin pedidos cargados.</div></div>
+    <div class="cards" id="lista-pedidos"><div class="empty"><div class="ico">📦</div>Sin pedidos aún.</div></div>
   </div>
 
-  <div id="tab-tareas" class="section">
-    <div class="form-box">
-      <p class="section-title">Nueva tarea</p>
-      <div class="form-grid">
-        <div><label class="lbl">Tarea</label><input type="text" id="t-nombre" placeholder="Ej: Cortar etiquetas"></div>
-        <div><label class="lbl">Asignada a</label><input type="text" id="t-persona" placeholder="Ej: Lichi Santi"></div>
+  <!-- CLIENTES -->
+  <div id="tab-clientes" class="sec">
+    <div class="fbox">
+      <p class="ftitle">Nuevo cliente</p>
+      <div class="fgrid">
+        <div><label class="lbl">Nombre</label><input type="text" id="c-nombre" placeholder="Nombre completo"></div>
+        <div><label class="lbl">Teléfono</label><input type="text" id="c-tel" placeholder="Ej: 0981 123456"></div>
+        <div class="full"><label class="lbl">Dirección (opcional)</label><input type="text" id="c-dir" placeholder="Dirección de entrega"></div>
       </div>
-      <button class="btn-primary" onclick="agregarTarea()">+ Agregar tarea</button>
+      <button class="btn-p" onclick="agregarCliente()">+ Agregar cliente</button>
     </div>
-    <div class="cards-grid" id="lista-tareas"><div class="empty-state"><div class="big">✅</div>Sin tareas por ahora.</div></div>
+    <div class="clist" id="lista-clientes"><div class="empty"><div class="ico">👥</div>Sin clientes aún.</div></div>
   </div>
 
-  <div id="tab-stock" class="section">
-    <div class="form-box">
-      <p class="section-title">Agregar insumo</p>
-      <div class="form-grid">
+  <!-- PRODUCTOS -->
+  <div id="tab-productos" class="sec">
+    <div class="fbox">
+      <p class="ftitle">Nuevo producto</p>
+      <div class="fgrid">
+        <div><label class="lbl">Nombre</label><input type="text" id="pr-nombre" placeholder="Ej: Mariposa rosa"></div>
+        <div><label class="lbl">Precio (opcional)</label><input type="number" id="pr-precio" placeholder="Ej: 15000"></div>
+        <div class="full"><label class="lbl">Descripción (opcional)</label><input type="text" id="pr-desc" placeholder="Ej: jabón artesanal de lavanda"></div>
+      </div>
+      <button class="btn-p" onclick="agregarProducto()">+ Agregar producto</button>
+    </div>
+    <div class="clist" id="lista-productos"><div class="empty"><div class="ico">🏷️</div>Sin productos aún.</div></div>
+  </div>
+
+  <!-- STOCK -->
+  <div id="tab-stock" class="sec">
+    <div class="fbox">
+      <p class="ftitle">Agregar insumo</p>
+      <div class="fgrid">
         <div><label class="lbl">Insumo</label><input type="text" id="s-nombre" placeholder="Ej: Mini jabón"></div>
         <div><label class="lbl">Cantidad inicial</label><input type="number" id="s-qty" placeholder="50" min="0"></div>
       </div>
-      <button class="btn-primary" onclick="agregarStock()">+ Agregar insumo</button>
+      <button class="btn-p" onclick="agregarStock()">+ Agregar insumo</button>
     </div>
-    <div class="stock-list" id="lista-stock"><div class="empty-state"><div class="big">🧴</div>Sin insumos cargados.</div></div>
+    <div class="slist" id="lista-stock"><div class="empty"><div class="ico">🧴</div>Sin insumos.</div></div>
   </div>
 
-  <div id="tab-asistente" class="section">
-    <div class="ai-box">
-      <textarea id="ai-input" placeholder="Preguntá algo... Ej: ¿Qué pedidos están pendientes? ¿Qué insumos están bajos?"></textarea>
-      <button class="btn-ai" id="btn-consultar" onclick="consultarIA()">Consultar</button>
+  <!-- IA -->
+  <div id="tab-ia" class="sec">
+    <div class="aibox">
+      <textarea id="ai-in" placeholder="Preguntá algo... Ej: ¿Qué pedidos están pendientes? ¿Qué insumos están bajos?"></textarea>
+      <button class="btn-ai" id="btn-ai" onclick="consultarIA()">Consultar</button>
     </div>
-    <div id="ai-output"></div>
-    <p style="font-size:0.73rem;color:var(--light-text);text-align:center;margin-top:6px;">El asistente usa tus datos actuales.</p>
+    <div id="ai-out"></div>
+    <p style="font-size:.72rem;color:var(--light);text-align:center;margin-top:5px;">Tiene acceso a todos tus datos actuales.</p>
+  </div>
+</div>
+
+<!-- MODAL: nuevo cliente rápido -->
+<div class="modal-bg" id="modal-cli">
+  <div class="modal">
+    <h3>➕ Crear cliente nuevo</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div><label class="lbl">Nombre</label><input type="text" id="mc-nombre" placeholder="Nombre del cliente"></div>
+      <div><label class="lbl">Teléfono (opcional)</label><input type="text" id="mc-tel" placeholder="0981 ..."></div>
+      <div><label class="lbl">Dirección (opcional)</label><input type="text" id="mc-dir" placeholder="Dirección"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="closeModal('modal-cli')">Cancelar</button>
+      <button class="btn-p" onclick="crearClienteRapido()">Crear y seleccionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: nuevo producto rápido -->
+<div class="modal-bg" id="modal-prod">
+  <div class="modal">
+    <h3>➕ Crear producto nuevo</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div><label class="lbl">Nombre</label><input type="text" id="mp-nombre" placeholder="Nombre del producto"></div>
+      <div><label class="lbl">Precio (opcional)</label><input type="number" id="mp-precio" placeholder="Ej: 15000"></div>
+      <div><label class="lbl">Descripción (opcional)</label><input type="text" id="mp-desc" placeholder="Descripción breve"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="closeModal('modal-prod')">Cancelar</button>
+      <button class="btn-p" onclick="crearProductoRapido()">Crear y agregar</button>
+    </div>
   </div>
 </div>
 
 <script>
-const FILE_NAME = 'santo_yvoty_datos.json';
-let pedidos=[], tareas=[], stock=[];
-let driveFileId=null, tokenClient, accessToken;
-let saveTimer=null;
+const FILE_NAME='santo_yvoty_datos.json';
+let pedidos=[],clientes=[],productos=[],stock=[];
+let driveFileId=null,tokenClient,accessToken,saveTimer=null;
 
-// ── CONFIG ──────────────────────────────────────────────────────────────
-function getConfig() {
-  return {
-    clientId: localStorage.getItem('sy_client_id') || '',
-    apiKey:   localStorage.getItem('sy_api_key')   || ''
-  };
+// ── CONFIG ─────────────────────────────────────────────────
+function getConfig(){return{clientId:localStorage.getItem('sy_cid')||'',apiKey:localStorage.getItem('sy_key')||''};}
+function saveConfig(){
+  const cid=document.getElementById('cfg-cid').value.trim();
+  const key=document.getElementById('cfg-key').value.trim();
+  if(!cid||!key)return alert('Completá ambos campos.');
+  localStorage.setItem('sy_cid',cid);localStorage.setItem('sy_key',key);
+  document.getElementById('setup').style.display='none';
+  document.getElementById('login').style.display='flex';
+}
+function init(){
+  const c=getConfig();
+  if(!c.clientId||!c.apiKey){document.getElementById('setup').style.display='block';}
+  else{document.getElementById('login').style.display='flex';}
 }
 
-function saveConfig() {
-  const cid = document.getElementById('cfg-client-id').value.trim();
-  const akey = document.getElementById('cfg-api-key').value.trim();
-  if (!cid || !akey) return alert('Completá ambos campos.');
-  localStorage.setItem('sy_client_id', cid);
-  localStorage.setItem('sy_api_key', akey);
-  document.getElementById('setup-guide').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  loadGSI();
-}
-
-function init() {
-  const cfg = getConfig();
-  if (!cfg.clientId || !cfg.apiKey) {
-    document.getElementById('setup-guide').style.display = 'block';
-  } else {
-    document.getElementById('login-screen').style.display = 'flex';
-    loadGSI();
-  }
-}
-
-function loadGSI() {
-  // GSI loaded via <script> in head; wait for it
-  const wait = setInterval(() => {
-    if (window.google && google.accounts) { clearInterval(wait); } 
-  }, 100);
-}
-
-// ── AUTH ──────────────────────────────────────────────────────────────
-function signIn() {
-  const cfg = getConfig();
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: cfg.clientId,
-    scope: 'https://www.googleapis.com/auth/drive.file',
-    callback: async (resp) => {
-      if (resp.error) { alert('Error al iniciar sesión: ' + resp.error); return; }
-      accessToken = resp.access_token;
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      setSyncStatus('syncing', 'Cargando datos...');
-      await loadGapiAndData();
+// ── AUTH ───────────────────────────────────────────────────
+function signIn(){
+  const c=getConfig();
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:c.clientId,scope:'https://www.googleapis.com/auth/drive.file',
+    callback:async(r)=>{
+      if(r.error){alert('Error: '+r.error);return;}
+      accessToken=r.access_token;
+      document.getElementById('login').style.display='none';
+      document.getElementById('app').style.display='block';
+      setSS('saving','Cargando...');
+      await loadGapi();
     }
   });
   tokenClient.requestAccessToken();
 }
-
-async function loadGapiAndData() {
+async function loadGapi(){
   await loadScript('https://apis.google.com/js/api.js');
-  await new Promise(res => gapi.load('client', res));
-  const cfg = getConfig();
-  await gapi.client.init({ apiKey: cfg.apiKey, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
-  gapi.client.setToken({ access_token: accessToken });
-  await loadOrCreateFile();
+  await new Promise(r=>gapi.load('client',r));
+  const c=getConfig();
+  await gapi.client.init({apiKey:c.apiKey,discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']});
+  gapi.client.setToken({access_token:accessToken});
+  await loadOrCreate();
 }
-
-function loadScript(src) {
-  return new Promise((res, rej) => {
-    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
-    const s = document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej;
-    document.head.appendChild(s);
+function loadScript(src){
+  return new Promise((r,j)=>{
+    if(document.querySelector(`script[src="${src}"]`)){r();return;}
+    const s=document.createElement('script');s.src=src;s.onload=r;s.onerror=j;document.head.appendChild(s);
   });
 }
 
-// ── DRIVE ──────────────────────────────────────────────────────────────
-async function loadOrCreateFile() {
-  try {
-    const res = await gapi.client.drive.files.list({
-      q: `name='${FILE_NAME}' and trashed=false`,
-      spaces: 'drive', fields: 'files(id)'
-    });
-    const files = res.result.files;
-    if (files.length > 0) { driveFileId = files[0].id; await loadData(); }
-    else { await createFile(); }
-    setSyncStatus('synced', 'Sincronizado ✓');
-  } catch(e) {
-    console.error(e); setSyncStatus('error', 'Error de conexión');
-  }
+// ── DRIVE ──────────────────────────────────────────────────
+async function loadOrCreate(){
+  try{
+    const r=await gapi.client.drive.files.list({q:`name='${FILE_NAME}' and trashed=false`,spaces:'drive',fields:'files(id)'});
+    const f=r.result.files;
+    if(f.length){driveFileId=f[0].id;await loadData();}
+    else await createFile();
+    setSS('ok','Sincronizado ✓');
+  }catch(e){console.error(e);setSS('err','Error de conexión');}
 }
-
-async function createFile() {
-  const body = JSON.stringify({ pedidos:[], tareas:[], stock:[] });
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify({name:FILE_NAME,mimeType:'application/json'})],{type:'application/json'}));
-  form.append('file', new Blob([body],{type:'application/json'}));
-  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
-    method:'POST', headers:{Authorization:`Bearer ${accessToken}`}, body:form
-  });
-  const data = await res.json(); driveFileId = data.id;
+async function createFile(){
+  const body=JSON.stringify({pedidos:[],clientes:[],productos:[],stock:[]});
+  const form=new FormData();
+  form.append('metadata',new Blob([JSON.stringify({name:FILE_NAME,mimeType:'application/json'})],{type:'application/json'}));
+  form.append('file',new Blob([body],{type:'application/json'}));
+  const r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:`Bearer ${accessToken}`},body:form});
+  const d=await r.json();driveFileId=d.id;
 }
-
-async function loadData() {
-  const res = await gapi.client.drive.files.get({fileId:driveFileId, alt:'media'});
-  const d = typeof res.result==='string' ? JSON.parse(res.result) : res.result;
-  pedidos=d.pedidos||[]; tareas=d.tareas||[]; stock=d.stock||[];
+async function loadData(){
+  const r=await gapi.client.drive.files.get({fileId:driveFileId,alt:'media'});
+  const d=typeof r.result==='string'?JSON.parse(r.result):r.result;
+  pedidos=d.pedidos||[];clientes=d.clientes||[];productos=d.productos||[];stock=d.stock||[];
   renderAll();
 }
-
-async function saveData() {
-  if (!driveFileId) return;
-  setSyncStatus('syncing','Guardando...');
-  try {
+async function saveData(){
+  if(!driveFileId)return;setSS('saving','Guardando...');
+  try{
     await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{
-      method:'PATCH', headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
-      body:JSON.stringify({pedidos,tareas,stock})
+      method:'PATCH',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+      body:JSON.stringify({pedidos,clientes,productos,stock})
     });
-    setSyncStatus('synced','Guardado ✓');
-  } catch(e){ setSyncStatus('error','Error al guardar'); }
+    setSS('ok','Guardado ✓');
+  }catch(e){setSS('err','Error al guardar');}
 }
+function sched(){clearTimeout(saveTimer);saveTimer=setTimeout(saveData,1200);}
+function setSS(s,t){document.getElementById('sync-bar').className=s;document.getElementById('sync-txt').textContent=t;}
 
-function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveData,1200); }
-function setSyncStatus(state,text){ document.getElementById('sync-status').className=state; document.getElementById('sync-text').textContent=text; }
-
-// ── UI ──────────────────────────────────────────────────────────────
-function showTab(name,el){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+// ── UI HELPERS ─────────────────────────────────────────────
+function showTab(n,el){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active'); el.classList.add('active');
-  if(name==='pedidos') renderStats();
+  document.getElementById('tab-'+n).classList.add('active');el.classList.add('active');
+  if(n==='pedidos')renderStats();
 }
-function renderAll(){ renderPedidos(); renderTareas(); renderStock(); renderStats(); }
-function now(){ return new Date().toLocaleDateString('es-PY',{day:'2-digit',month:'2-digit'}); }
+function renderAll(){renderPedidos();renderClientes();renderProductos();renderStock();renderStats();}
+function now(){return new Date().toLocaleDateString('es-PY',{day:'2-digit',month:'2-digit',year:'2-digit'});}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
 
-// PEDIDOS
-function agregarPedido(){
-  const cliente=document.getElementById('p-cliente').value.trim();
-  const tipo=document.getElementById('p-tipo').value;
-  const detalle=document.getElementById('p-detalle').value.trim();
-  if(!cliente||!detalle)return alert('Completá cliente y detalle.');
-  pedidos.push({id:Date.now(),cliente,tipo,detalle,estado:'Pendiente',fecha:now()});
-  document.getElementById('p-cliente').value=''; document.getElementById('p-detalle').value='';
-  renderPedidos(); scheduleSave();
+// ── SEARCH DROPDOWN ────────────────────────────────────────
+let activeDD=null;
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.search-wrap')){
+    document.querySelectorAll('.dropdown').forEach(d=>d.classList.remove('open'));
+  }
+});
+
+function filterDropdown(inputId,ddId,dataArr,field,onSelect){
+  const inp=document.getElementById(inputId);
+  const dd=document.getElementById(ddId);
+  const val=inp.value.toLowerCase().trim();
+  const arr=window[dataArr];
+  const filtered=arr.filter(x=>x[field].toLowerCase().includes(val));
+  dd.innerHTML='';
+  if(filtered.length===0&&val===''){dd.classList.remove('open');return;}
+  filtered.forEach(item=>{
+    const div=document.createElement('div');div.className='dd-item';
+    div.textContent=item[field];
+    if(dataArr==='productos'&&item.precio){div.textContent+=` — Gs. ${Number(item.precio).toLocaleString('es-PY')}`;}
+    div.onclick=()=>{onSelect(item);dd.classList.remove('open');};
+    dd.appendChild(div);
+  });
+  // "Crear nuevo" option
+  if(val){
+    const exists=arr.some(x=>x[field].toLowerCase()===val);
+    if(!exists){
+      const div=document.createElement('div');div.className='dd-item';
+      div.innerHTML=`<span>✚ Crear "<strong>${inp.value}</strong>"</span><span class="dd-new">NUEVO</span>`;
+      div.onclick=()=>{
+        if(dataArr==='clientes'){document.getElementById('mc-nombre').value=inp.value;openModal('modal-cli');}
+        else if(dataArr==='productos'){document.getElementById('mp-nombre').value=inp.value;openModal('modal-prod');}
+        dd.classList.remove('open');
+      };
+      dd.appendChild(div);
+    }
+  }
+  if(dd.children.length>0)dd.classList.add('open');else dd.classList.remove('open');
 }
+
+// ── CLIENTES ───────────────────────────────────────────────
+let selectedClienteId=null;
+function selectCliente(c){
+  document.getElementById('p-cli-input').value=c.nombre;
+  document.getElementById('p-cli-id').value=c.id;
+  selectedClienteId=c.id;
+}
+function agregarCliente(nombre,tel,dir){
+  const n=(nombre||document.getElementById('c-nombre').value).trim();
+  const t=(tel||document.getElementById('c-tel').value).trim();
+  const d=(dir||document.getElementById('c-dir').value).trim();
+  if(!n)return alert('Escribí el nombre del cliente.');
+  const c={id:Date.now(),nombre:n,tel:t,dir:d,fecha:now()};
+  clientes.push(c);
+  if(!nombre){document.getElementById('c-nombre').value='';document.getElementById('c-tel').value='';document.getElementById('c-dir').value='';}
+  renderClientes();sched();return c;
+}
+function crearClienteRapido(){
+  const n=document.getElementById('mc-nombre').value.trim();
+  const t=document.getElementById('mc-tel').value.trim();
+  const d=document.getElementById('mc-dir').value.trim();
+  if(!n)return alert('Escribí el nombre.');
+  const c={id:Date.now(),nombre:n,tel:t,dir:d,fecha:now()};
+  clientes.push(c);renderClientes();sched();
+  selectCliente(c);
+  document.getElementById('mc-nombre').value='';document.getElementById('mc-tel').value='';document.getElementById('mc-dir').value='';
+  closeModal('modal-cli');
+}
+function renderClientes(){
+  const el=document.getElementById('lista-clientes');
+  if(!clientes.length){el.innerHTML='<div class="empty"><div class="ico">👥</div>Sin clientes aún.</div>';return;}
+  el.innerHTML=clientes.map(c=>`<div class="citem">
+    <div><div class="cname">${c.nombre}</div>
+    <div class="cinfo">${c.tel?'📞 '+c.tel:''}${c.tel&&c.dir?' · ':''}${c.dir?'📍 '+c.dir:''}</div></div>
+    <button class="btn-del" onclick="borrarCliente(${c.id})">✕</button>
+  </div>`).join('');
+}
+function borrarCliente(id){clientes=clientes.filter(x=>x.id!==id);renderClientes();sched();}
+
+// ── PRODUCTOS ──────────────────────────────────────────────
+let selectedProds=[];
+function selectProducto(p){
+  document.getElementById('p-prod-input').value='';
+  if(selectedProds.find(x=>x.id===p.id)){return;}
+  selectedProds.push({...p,qty:1});
+  renderSelectedProds();
+}
+function renderSelectedProds(){
+  const wrap=document.getElementById('selected-prods-wrap');
+  const list=document.getElementById('selected-prods');
+  if(!selectedProds.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  list.innerHTML=selectedProds.map((p,i)=>`<div class="prod-chip">
+    <span class="prod-chip-name">${p.nombre}</span>
+    <div class="prod-chip-qty">
+      <button class="qty-btn" onclick="changeQtyProd(${i},-1)">−</button>
+      <span class="qty-val">${p.qty}</span>
+      <button class="qty-btn" onclick="changeQtyProd(${i},1)">+</button>
+      <button class="chip-del" onclick="removeProd(${i})">✕</button>
+    </div>
+  </div>`).join('');
+}
+function changeQtyProd(i,d){selectedProds[i].qty=Math.max(1,selectedProds[i].qty+d);renderSelectedProds();}
+function removeProd(i){selectedProds.splice(i,1);renderSelectedProds();}
+
+function agregarProducto(nombre,precio,desc){
+  const n=(nombre||document.getElementById('pr-nombre').value).trim();
+  const pr=(precio||document.getElementById('pr-precio').value)||0;
+  const de=(desc||document.getElementById('pr-desc').value).trim();
+  if(!n)return alert('Escribí el nombre del producto.');
+  const p={id:Date.now(),nombre:n,precio:pr,desc:de,fecha:now()};
+  productos.push(p);
+  if(!nombre){document.getElementById('pr-nombre').value='';document.getElementById('pr-precio').value='';document.getElementById('pr-desc').value='';}
+  renderProductos();sched();return p;
+}
+function crearProductoRapido(){
+  const n=document.getElementById('mp-nombre').value.trim();
+  const pr=document.getElementById('mp-precio').value||0;
+  const de=document.getElementById('mp-desc').value.trim();
+  if(!n)return alert('Escribí el nombre.');
+  const p={id:Date.now(),nombre:n,precio:pr,desc:de,fecha:now()};
+  productos.push(p);renderProductos();sched();
+  selectProducto(p);
+  document.getElementById('mp-nombre').value='';document.getElementById('mp-precio').value='';document.getElementById('mp-desc').value='';
+  closeModal('modal-prod');
+}
+function renderProductos(){
+  const el=document.getElementById('lista-productos');
+  if(!productos.length){el.innerHTML='<div class="empty"><div class="ico">🏷️</div>Sin productos aún.</div>';return;}
+  el.innerHTML=productos.map(p=>`<div class="citem">
+    <div>
+      <div class="cname">${p.nombre}</div>
+      <div class="cinfo">${p.precio?'Gs. '+Number(p.precio).toLocaleString('es-PY'):'Sin precio'}${p.desc?' · '+p.desc:''}</div>
+    </div>
+    <button class="btn-del" onclick="borrarProducto(${p.id})">✕</button>
+  </div>`).join('');
+}
+function borrarProducto(id){productos=productos.filter(x=>x.id!==id);renderProductos();sched();}
+
+// ── PEDIDOS ────────────────────────────────────────────────
+function agregarPedido(){
+  const cliId=document.getElementById('p-cli-id').value;
+  const cliNombre=document.getElementById('p-cli-input').value.trim();
+  const tipo=document.getElementById('p-tipo').value;
+  const fecha=document.getElementById('p-fecha').value;
+  const nota=document.getElementById('p-nota').value.trim();
+  if(!cliNombre)return alert('Seleccioná o creá un cliente.');
+  if(!selectedProds.length)return alert('Agregá al menos un producto.');
+  pedidos.push({
+    id:Date.now(),clienteId:cliId||null,clienteNombre:cliNombre,
+    tipo,fechaEntrega:fecha,nota,
+    productos:selectedProds.map(p=>({id:p.id,nombre:p.nombre,qty:p.qty,precio:p.precio})),
+    estado:'Pendiente',fecha:now()
+  });
+  // reset
+  document.getElementById('p-cli-input').value='';
+  document.getElementById('p-cli-id').value='';
+  document.getElementById('p-nota').value='';
+  document.getElementById('p-fecha').value='';
+  selectedClienteId=null;selectedProds=[];renderSelectedProds();
+  renderPedidos();sched();
+}
+
 function renderPedidos(){
   const el=document.getElementById('lista-pedidos');
-  if(!pedidos.length){el.innerHTML='<div class="empty-state"><div class="big">📦</div>Sin pedidos.</div>';renderStats();return;}
+  if(!pedidos.length){el.innerHTML='<div class="empty"><div class="ico">📦</div>Sin pedidos aún.</div>';renderStats();return;}
   el.innerHTML=pedidos.map(p=>`<div class="card">
-    <div class="card-header"><div class="card-title">${p.cliente}</div>
-    <span class="badge badge-${p.estado==='Pendiente'?'pendiente':p.estado==='En proceso'?'proceso':'listo'}">${p.estado}</span></div>
-    <div class="card-meta">📍 ${p.tipo}</div>
-    <ul class="card-items">${p.detalle.split(',').map(x=>`<li>${x.trim()}</li>`).join('')}</ul>
-    <div class="card-footer"><span class="card-date">${p.fecha}</span>
-    <div style="display:flex;gap:5px;"><button class="btn-status" onclick="avanzarPedido(${p.id})">→ Avanzar</button>
-    <button class="btn-delete" onclick="borrarPedido(${p.id})">✕</button></div></div></div>`).join('');
+    <div class="card-top">
+      <div class="card-name">${p.clienteNombre}</div>
+      <span class="badge ${p.estado==='Pendiente'?'b-pend':p.estado==='En proceso'?'b-proc':'b-done'}">${p.estado}</span>
+    </div>
+    <div class="card-sub">📍 ${p.tipo}${p.fechaEntrega?' · 📅 '+p.fechaEntrega:''}</div>
+    <ul class="card-products">
+      ${p.productos.map(pr=>`<li>${pr.nombre} × ${pr.qty}${pr.precio?' — Gs. '+Number(pr.precio*pr.qty).toLocaleString('es-PY'):''}</li>`).join('')}
+    </ul>
+    ${p.nota?`<div style="font-size:.75rem;color:var(--light);margin-top:7px;font-style:italic;">📝 ${p.nota}</div>`:''}
+    <div class="card-foot">
+      <span class="card-date">${p.fecha}</span>
+      <div class="row-btns">
+        <button class="btn-adv" onclick="avanzarPedido(${p.id})">→ Avanzar</button>
+        <button class="btn-del" onclick="borrarPedido(${p.id})">✕</button>
+      </div>
+    </div>
+  </div>`).join('');
   renderStats();
 }
-function avanzarPedido(id){const p=pedidos.find(x=>x.id===id);if(!p)return;const e=['Pendiente','En proceso','Listo'];const i=e.indexOf(p.estado);if(i<e.length-1)p.estado=e[i+1];renderPedidos();scheduleSave();}
-function borrarPedido(id){pedidos=pedidos.filter(x=>x.id!==id);renderPedidos();scheduleSave();}
+function avanzarPedido(id){
+  const p=pedidos.find(x=>x.id===id);if(!p)return;
+  const e=['Pendiente','En proceso','Listo'];const i=e.indexOf(p.estado);
+  if(i<e.length-1)p.estado=e[i+1];renderPedidos();sched();
+}
+function borrarPedido(id){pedidos=pedidos.filter(x=>x.id!==id);renderPedidos();sched();}
 function renderStats(){
   const pend=pedidos.filter(p=>p.estado==='Pendiente').length;
   const proc=pedidos.filter(p=>p.estado==='En proceso').length;
-  const list=pedidos.filter(p=>p.estado==='Listo').length;
-  document.getElementById('stats-pedidos').innerHTML=`
-    <div class="stat-pill"><strong>${pend}</strong> Pendientes</div>
-    <div class="stat-pill"><strong>${proc}</strong> En proceso</div>
-    <div class="stat-pill"><strong>${list}</strong> Listos</div>
-    <div class="stat-pill"><strong>${pedidos.length}</strong> Total</div>`;
+  const done=pedidos.filter(p=>p.estado==='Listo').length;
+  document.getElementById('stats').innerHTML=`
+    <div class="pill"><strong>${pend}</strong> Pendientes</div>
+    <div class="pill"><strong>${proc}</strong> En proceso</div>
+    <div class="pill"><strong>${done}</strong> Listos</div>
+    <div class="pill"><strong>${pedidos.length}</strong> Total</div>`;
 }
 
-// TAREAS
-function agregarTarea(){
-  const nombre=document.getElementById('t-nombre').value.trim();
-  const persona=document.getElementById('t-persona').value.trim();
-  if(!nombre)return alert('Escribí el nombre de la tarea.');
-  tareas.push({id:Date.now(),nombre,persona:persona||'Sin asignar',estado:'Pendiente',fecha:now()});
-  document.getElementById('t-nombre').value=''; document.getElementById('t-persona').value='';
-  renderTareas(); scheduleSave();
-}
-function renderTareas(){
-  const el=document.getElementById('lista-tareas');
-  if(!tareas.length){el.innerHTML='<div class="empty-state"><div class="big">✅</div>Sin tareas.</div>';return;}
-  el.innerHTML=tareas.map(t=>`<div class="card">
-    <div class="card-header"><div class="card-title">${t.nombre}</div>
-    <span class="badge badge-${t.estado==='Pendiente'?'pendiente':t.estado==='En proceso'?'proceso':'listo'}">${t.estado}</span></div>
-    <div class="card-meta">👤 ${t.persona}</div>
-    <div class="card-footer"><span class="card-date">${t.fecha}</span>
-    <div style="display:flex;gap:5px;"><button class="btn-status" onclick="avanzarTarea(${t.id})">→ Avanzar</button>
-    <button class="btn-delete" onclick="borrarTarea(${t.id})">✕</button></div></div></div>`).join('');
-}
-function avanzarTarea(id){const t=tareas.find(x=>x.id===id);if(!t)return;const e=['Pendiente','En proceso','Listo'];const i=e.indexOf(t.estado);if(i<e.length-1)t.estado=e[i+1];renderTareas();scheduleSave();}
-function borrarTarea(id){tareas=tareas.filter(x=>x.id!==id);renderTareas();scheduleSave();}
-
-// STOCK
+// ── STOCK ──────────────────────────────────────────────────
 function agregarStock(){
   const nombre=document.getElementById('s-nombre').value.trim();
   const qty=parseInt(document.getElementById('s-qty').value)||0;
   if(!nombre)return alert('Escribí el nombre del insumo.');
   stock.push({id:Date.now(),nombre,qty,max:Math.max(qty,50)});
-  document.getElementById('s-nombre').value=''; document.getElementById('s-qty').value='';
-  renderStock(); scheduleSave();
+  document.getElementById('s-nombre').value='';document.getElementById('s-qty').value='';
+  renderStock();sched();
 }
-function cambiarQty(id,delta){const s=stock.find(x=>x.id===id);if(s){s.qty=Math.max(0,s.qty+delta);renderStock();scheduleSave();}}
+function cambiarQty(id,d){const s=stock.find(x=>x.id===id);if(s){s.qty=Math.max(0,s.qty+d);renderStock();sched();}}
 function renderStock(){
   const el=document.getElementById('lista-stock');
-  if(!stock.length){el.innerHTML='<div class="empty-state"><div class="big">🧴</div>Sin insumos.</div>';return;}
+  if(!stock.length){el.innerHTML='<div class="empty"><div class="ico">🧴</div>Sin insumos.</div>';return;}
   el.innerHTML=stock.map(s=>{
     const pct=Math.min(100,Math.round((s.qty/s.max)*100));
-    const nivel=pct>60?'alta':pct>25?'media':'baja';
-    return `<div class="stock-item"><div>
-      <div class="stock-name">${s.nombre}</div>
-      <div class="stock-qty">${s.qty} unidades · ${nivel==='baja'?'⚠️ Bajo':nivel==='media'?'🟡 Medio':'🟢 OK'}</div>
-      <div class="stock-bar-wrap"><div class="stock-bar ${nivel}" style="width:${pct}%"></div></div></div>
-      <div class="stock-controls">
-        <button class="btn-qty" onclick="cambiarQty(${s.id},-1)">−</button>
-        <span class="qty-num">${s.qty}</span>
-        <button class="btn-qty" onclick="cambiarQty(${s.id},+1)">+</button>
-        <button class="btn-delete" onclick="borrarStock(${s.id})">✕</button>
+    const nv=pct>60?'hi':pct>25?'md':'lo';
+    return `<div class="sitem"><div>
+      <div class="sname">${s.nombre}</div>
+      <div class="sqty">${s.qty} unidades · ${nv==='lo'?'⚠️ Bajo':nv==='md'?'🟡 Medio':'🟢 OK'}</div>
+      <div class="sbar-w"><div class="sbar ${nv}" style="width:${pct}%"></div></div></div>
+      <div class="sctrl">
+        <button class="sqbtn" onclick="cambiarQty(${s.id},-1)">−</button>
+        <span class="sqnum">${s.qty}</span>
+        <button class="sqbtn" onclick="cambiarQty(${s.id},+1)">+</button>
+        <button class="btn-del" onclick="borrarStock(${s.id})">✕</button>
       </div></div>`;
   }).join('');
 }
-function borrarStock(id){stock=stock.filter(x=>x.id!==id);renderStock();scheduleSave();}
+function borrarStock(id){stock=stock.filter(x=>x.id!==id);renderStock();sched();}
 
-// ASISTENTE IA
+// ── IA ─────────────────────────────────────────────────────
 async function consultarIA(){
-  const pregunta=document.getElementById('ai-input').value.trim(); if(!pregunta)return;
-  const btn=document.getElementById('btn-consultar'); btn.disabled=true; btn.textContent='...';
-  const ctx=`Sos el asistente de "Santo Yvoty", un emprendimiento artesanal.
-PEDIDOS: ${pedidos.length?pedidos.map(p=>`${p.cliente}|${p.tipo}|${p.estado}|${p.detalle}`).join(' / '):'Sin pedidos.'}
-TAREAS: ${tareas.length?tareas.map(t=>`${t.nombre}|${t.persona}|${t.estado}`).join(' / '):'Sin tareas.'}
-STOCK: ${stock.length?stock.map(s=>`${s.nombre}:${s.qty}u`).join(', '):'Sin insumos.'}
+  const q=document.getElementById('ai-in').value.trim();if(!q)return;
+  const btn=document.getElementById('btn-ai');btn.disabled=true;btn.textContent='...';
+  const ctx=`Sos el asistente de "Santo Yvoty", emprendimiento artesanal.
+PEDIDOS (${pedidos.length}): ${pedidos.length?pedidos.map(p=>`${p.clienteNombre}|${p.tipo}|${p.estado}|${p.productos.map(x=>x.nombre+'×'+x.qty).join(',')}`).join(' / '):'Sin pedidos.'}
+CLIENTES (${clientes.length}): ${clientes.length?clientes.map(c=>c.nombre+(c.tel?' '+c.tel:'')).join(', '):'Sin clientes.'}
+PRODUCTOS (${productos.length}): ${productos.length?productos.map(p=>p.nombre+(p.precio?' Gs.'+p.precio:'')).join(', '):'Sin productos.'}
+STOCK (${stock.length}): ${stock.length?stock.map(s=>`${s.nombre}:${s.qty}u`).join(', '):'Sin insumos.'}
 Respondé breve y claro en español rioplatense. Alertá stock menor a 5 unidades.`;
-  const out=document.getElementById('ai-output');
-  out.innerHTML='<div class="ai-response" style="color:var(--light-text)">✨ Consultando...</div>';
+  const out=document.getElementById('ai-out');
+  out.innerHTML='<div class="ai-resp" style="color:var(--light)">✨ Consultando...</div>';
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:ctx,messages:[{role:'user',content:pregunta}]})});
-    const data=await res.json();
-    out.innerHTML=`<div class="ai-response">${data.content?.[0]?.text||'Sin respuesta.'}</div>`;
-  }catch(e){out.innerHTML='<div class="ai-response" style="color:red">Error al conectar.</div>';}
-  btn.disabled=false; btn.textContent='Consultar'; document.getElementById('ai-input').value='';
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:ctx,messages:[{role:'user',content:q}]})});
+    const d=await r.json();
+    out.innerHTML=`<div class="ai-resp">${d.content?.[0]?.text||'Sin respuesta.'}</div>`;
+  }catch(e){out.innerHTML='<div class="ai-resp" style="color:red">Error al conectar.</div>';}
+  btn.disabled=false;btn.textContent='Consultar';document.getElementById('ai-in').value='';
 }
 
-init(); renderStats();
+init();renderStats();
 </script>
 </body>
 </html>
