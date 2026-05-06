@@ -17,11 +17,6 @@
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown);min-height:100vh;}
 
 /* SETUP */
-#setup{padding:20px;display:none;}
-.setup-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:520px;}
-.setup-card h2{font-family:'Cormorant Garamond',serif;font-size:1.2rem;margin-bottom:10px;}
-.setup-card ol{padding-left:18px;font-size:.83rem;line-height:2.2;}
-.setup-card a{color:var(--terra);}
 
 /* LOGIN */
 #login{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:90vh;padding:30px;text-align:center;}
@@ -277,23 +272,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--terra);}
 </head>
 <body>
 
-<!-- SETUP -->
-<div id="setup">
-  <div class="setup-card">
-    <h2>⚙️ Configuración inicial</h2>
-    <p style="font-size:.82rem;color:var(--light);margin-bottom:12px;">Credenciales de Google Cloud para sincronizar con Drive.</p>
-    <ol><li>Andá a <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a></li>
-    <li>Habilitá la <strong>Google Drive API</strong></li>
-    <li>Creá <strong>ID de cliente OAuth 2.0</strong> → Aplicación web</li>
-    <li>Agregá tu URL de GitHub Pages como origen autorizado</li>
-    <li>Creá una <strong>Clave de API</strong></li></ol>
-    <div style="display:flex;flex-direction:column;gap:9px;margin-top:13px;">
-      <div><label class="lbl">Client ID</label><input id="cfg-cid" placeholder="xxxx.apps.googleusercontent.com"></div>
-      <div><label class="lbl">API Key</label><input id="cfg-key" placeholder="AIzaSy..."></div>
-      <button class="btn-p" style="width:fit-content;margin-top:4px" onclick="saveConfig()">Guardar y continuar →</button>
-    </div>
-  </div>
-</div>
+<!-- config removed -->
 
 <!-- LOGIN -->
 <div id="login">
@@ -575,25 +554,14 @@ let selectedChips=[],selPedidoId=null,formPedVisible=true;
 let tareaFiltro='',ajTarget=null,ajMode=null;
 
 // ══ CONFIG ════════════════════════════════════════════════
-function getConfig(){return{cid:localStorage.getItem('sy_cid')||'',key:localStorage.getItem('sy_key')||''};}
-function saveConfig(){
-  const c=document.getElementById('cfg-cid').value.trim(),k=document.getElementById('cfg-key').value.trim();
-  if(!c||!k)return alert('Completá ambos campos.');
-  localStorage.setItem('sy_cid',c);localStorage.setItem('sy_key',k);
-  document.getElementById('setup').style.display='none';
-  document.getElementById('login').style.display='flex';
-}
-function init(){
-  const c=getConfig();
-  if(!c.cid||!c.key)document.getElementById('setup').style.display='block';
-  else document.getElementById('login').style.display='flex';
-}
+const _C={cid:'735931482577-624is4fevc4vvmbmtqklq4u6pcnn9mop.apps.googleusercontent.com',key:'AIzaSyA6uvupouilC4SfGvShorZ6PIptkaVVzjI'};
+function getConfig(){return _C;}
+function init(){document.getElementById('login').style.display='flex';}
 
 // ══ AUTH ══════════════════════════════════════════════════
 function signIn(){
-  const c=getConfig();
   tokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:c.cid,
+    client_id:_C.cid,
     scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',
     callback:async r=>{
       if(r.error){alert('Error: '+r.error);return;}
@@ -624,8 +592,7 @@ function signIn(){
 async function loadGapi(){
   await loadScript('https://apis.google.com/js/api.js');
   await new Promise(r=>gapi.load('client',r));
-  const c=getConfig();
-  await gapi.client.init({apiKey:c.key,discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']});
+  await gapi.client.init({apiKey:_C.key,discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']});
   gapi.client.setToken({access_token:accessToken});
   await loadOrCreate();
 }
